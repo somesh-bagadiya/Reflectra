@@ -1,12 +1,11 @@
 import reflex as rx
-import uuid
+import redis
+from ..backend import *
 
 class HomeState(rx.State):
-    
+
     ...
 
-def generate_id():
-    return str(uuid.uuid4())
 class Todo(rx.Model, table=True):
     uuid: str
     task: str
@@ -212,6 +211,8 @@ def create_add_task_button():
         border_radius="0.5rem",
         color="#ffffff",
         width="100%",
+        on_click=RedisState.insert_all
+        # on_click=RedisState.insert_task
     )
 
 
@@ -226,13 +227,15 @@ def create_task_input_form():
             padding="0.5rem",
             border_radius="0.25rem",
             width="100%",
+            on_change=RedisState.set_task,
+            value=RedisState.task,
         ),
         create_add_task_button(),
         margin_top="1rem",
     )
 
 
-def create_blank_input_form(bg_color, _rowsCount, _placeholder):
+def create_blank_input_form(bg_color, _rowsCount, _placeholder, _value):
     return rx.flex(
         rx.el.textarea(
             type="text",
@@ -248,6 +251,7 @@ def create_blank_input_form(bg_color, _rowsCount, _placeholder):
             # height="100%,",
             width="100%",
             rows=_rowsCount,
+            value=_value,
         ),
         # height="100%,",
         width="100%",
@@ -309,7 +313,7 @@ def create_main_content():
         rx.box(
             rx.vstack(
                 rx.box(
-                    create_blank_input_form("#dbffea", _rowsCount="13", _placeholder="I will remember today"),
+                    create_blank_input_form("#dbffea", _rowsCount="13", _placeholder="I will remember today", _value=RedisState.dataArr[0] | ""),
                     height="50%",
                     width="100%",
                     background_color="#dbffea",
@@ -317,7 +321,7 @@ def create_main_content():
                     box_shadow="0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
                 ),
                 rx.box(
-                    create_blank_input_form("#ffdbdb", _rowsCount="13", _placeholder="random question"),
+                    create_blank_input_form("#ffdbdb", _rowsCount="13", _placeholder="random question", _value=RedisState.dataArr[1] | ""),
                     height="50%",
                     width="100%",
                     background_color="#ffdbdb",
@@ -331,7 +335,7 @@ def create_main_content():
             width="30%",
         ),
         rx.box(
-            create_blank_input_form("#dbdbff", _rowsCount="25", _placeholder="chatbot"),
+            create_blank_input_form("#dbdbff", _rowsCount="25", _placeholder="chatbot", _value=RedisState.dataArr[3] | ""),
             height="720px",
             width="30%",
             background_color="#dbdbff",
