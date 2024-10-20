@@ -1,0 +1,27 @@
+Date: October 19, 2024
+
+Hey man,
+
+Today was such a rollercoaster! Let me walk you through it.
+
+Morning
+So, I woke up around 7:30 AM—honestly, I felt pretty groggy. I kind of just lay there for a bit thinking about all the stuff I had to do today. After finally getting out of bed, I grabbed a quick breakfast (just some toast and coffee) and got ready for the day. Nothing too crazy, just the usual: brushing, showering, and mentally preparing for a long day of work and studying. I was already thinking about the project I’m working on, especially the RAG system I need to focus on.
+
+Afternoon
+Lunchtime came around 1:00 PM, and I had a simple sandwich and chips. I spent most of the afternoon working on this deep learning project. It’s that one with the talking diary app where I’m using RAG and deploying it on GCP. Honestly, it’s exciting but a bit overwhelming. There was this moment where I hit a wall trying to integrate Chroma DB for storing embeddings. It was frustrating, but after taking a break and stepping away for a few minutes, I found a solution online and managed to implement it without too much drama.
+
+During my break, I just scrolled through Instagram and watched a few funny videos, which helped me clear my head. After that, I got back to it and made decent progress.
+
+Evening
+Dinner rolled around at about 7:00 PM, and I had some pasta I whipped up quickly. After eating, I decided to chill for a bit and watched an episode of The Office—it never gets old! Later, I spent some time working on another side project. I’m still figuring out the AI model I want to use for my personal assistant project, but I think I’m on the right track with Gemini for the RAG system. Overall, today felt productive but mentally exhausting. I’m glad I pushed through, though.
+
+Reflection
+I learned that stepping away from a problem when you’re stuck can actually help a lot. It’s something I keep forgetting but need to remember more often. I’m also super grateful for having access to all these resources online—I don’t know where I’d be without them!
+
+Tomorrow, I really want to focus on getting the core structure of my project in place without getting sidetracked. I think it’ll help me make more consistent progress.
+
+Anyway, that’s how my day went. How was yours?
+
+Catch up soon!
+
+Somesh

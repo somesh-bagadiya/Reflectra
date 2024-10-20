@@ -1,6 +1,9 @@
 import reflex as rx
 import redis
 from ..backend import *
+import datetime
+
+microphone_flag = True
 
 class HomeState(rx.State):
 
@@ -234,6 +237,76 @@ def create_task_input_form():
         margin_top="1rem",
     )
 
+def create_loading_spinner():
+    """Create an animated loading spinner for the chat interface."""
+    return rx.flex(
+        rx.container(
+            class_name="animate-spin",
+            border_bottom_width="2px",
+            border_color="#6366F1",
+            border_top_width="2px",
+            height="4rem",
+            display="inline-block",
+            border_radius="9999px",
+            width="4rem",
+        ),
+        display="flex",
+        align_items="center",
+        justify_content="center",
+        padding_top="1rem",
+        padding_bottom="1rem",
+    )
+
+def create_microphone_button():
+    """Creates a circular microphone button with gradient background and hover effects."""
+    if microphone_flag == True:
+        return rx.el.button(
+            rx.icon(
+                alt="Microphone icon",
+                tag="mic",
+                height="2rem",
+                color="#ffffff",
+                width="2rem",
+            ),
+            class_name="bg-gradient-to-r from-blue-500 to-purple-600 transform",
+            transition_duration="300ms",
+            transition_timing_function="cubic-bezier(0.4, 0, 0.2, 1)",
+            display="flex",
+            _focus={
+                "outline-style": "none",
+                "box-shadow": "var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color)",
+                "--ring-color": "#60A5FA",
+                "--ring-opacity": "0.5",
+            },
+            height="4rem",
+            _hover={"transform": "scale(1.05)"},
+            align_items="center",
+            justify_content="center",
+            border_radius="9999px",
+            box_shadow="0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+            transition_property="background-color, border-color, color, fill, stroke, opacity, box-shadow, transform",
+            width="4rem",
+        )
+    else:
+        return create_loading_spinner()
+
+
+def render_microphone_button_container():
+    """Renders a container with a microphone button positioned at the bottom center of the viewport."""
+    return rx.fragment(
+        rx.box(
+            rx.box(
+                create_microphone_button(),
+                margin_bottom="2rem",
+            ),
+            background_color="#dbdbff",
+            # class_name="bg-gradient-to-r from-blue-500 to-purple-600 transform",
+            display="flex",
+            height="8vh",
+            align_items="flex-end",
+            justify_content="center",
+        )
+    )
 
 def create_blank_input_form(bg_color, _rowsCount, _placeholder, _value):
     return rx.flex(
@@ -247,6 +320,7 @@ def create_blank_input_form(bg_color, _rowsCount, _placeholder, _value):
             border_width="1px",
             border_color="#D1D5DB",
             padding="0.5rem",
+            resize="none",
             border_radius="0.25rem",
             # height="100%,",
             width="100%",
@@ -283,6 +357,135 @@ def create_todo_list_component():
         border_radius="0.5rem",
         box_shadow="0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
         width="100%",
+    )
+
+
+def create_text(content):
+    """Create a text element with the given content."""
+    return rx.text(content)
+
+def create_message_box(message):
+    """Create a message box with the given message and timestamp."""
+    return rx.box(
+        create_text(content=message),
+        class_name="max-w-[70%]",
+        background_color="#3B82F6",
+        padding_left="1rem",
+        padding_right="1rem",
+        padding_top="0.5rem",
+        padding_bottom="0.5rem",
+        border_radius="0.5rem",
+        color="#ffffff",
+    )
+
+def create_aligned_message(message):
+    """Create an aligned message with the given message and timestamp."""
+    return rx.flex(
+        create_message_box(
+            message=message
+        ),
+        display="flex",
+        justify_content="flex-end",
+    )
+
+
+def create_icon_chat(alt_text, color, icon_tag):
+    """Create an icon with the given alt text, color, and icon tag."""
+    return rx.icon(
+        alt=alt_text,
+        tag=icon_tag,
+        height="1.5rem",
+        color=color,
+        width="1.5rem",
+    )
+
+
+def create_chat_header():
+    """Create the header for the chat assistant."""
+    return rx.box(
+        rx.heading(
+            "Aura",
+            font_weight="600",
+            font_size="1.5rem",
+            line_height="2rem",
+            color="#ffffff",
+            as_="h1",
+        ),
+        class_name="bg-gradient-to-r from-blue-400 to-indigo-500",
+        padding="1rem",
+        border_top_left_radius="0.8rem",
+        border_top_right_radius="0.8rem",
+    )
+
+
+def create_user_message():
+    """Create a user message with predefined content and timestamp."""
+    return rx.box(
+        create_text(
+            content="Hi! I have a question about my account."
+        ),
+        class_name="max-w-[70%]",
+        background_color="#E5E7EB",
+        padding_left="1rem",
+        padding_right="1rem",
+        padding_top="0.5rem",
+        padding_bottom="0.5rem",
+        border_radius="0.5rem",
+        color="#1F2937",
+    )
+
+
+def create_chat_messages():
+    """Create the chat messages container with predefined messages."""
+    return rx.box(
+        create_aligned_message(
+            message="Hello! How can I assist you today?",
+        ),
+        rx.flex(
+            create_user_message(),
+            display="flex",
+            justify_content="flex-start",
+        ),
+        create_aligned_message(
+            message="Of course! I'd be happy to help. What specific question do you have about your account?",
+        ),
+        display="flex",
+        flex_direction="column",
+        flex_grow="1",
+        overflow_y="auto",
+        padding="1rem",
+        gap="1rem",
+    )
+
+
+def create_message_input():
+    """Create the input field for typing messages."""
+    return rx.el.input(
+        type="text",
+        placeholder="Type your message...",
+        background_color="#F3F4F6",
+        flex_grow="1",
+        outline_style="none",
+        padding_left="1rem",
+        padding_right="1rem",
+        padding_top="0.5rem",
+        padding_bottom="0.5rem",
+    )
+
+
+def create_chat_interface():
+    """Create the complete chat interface with header, messages, and input."""
+    return rx.flex(
+        create_chat_header(),
+        create_chat_messages(),
+        class_name="h-[600px]",
+        background_color="#dbdbff",
+        display="flex",
+        flex_direction="column",
+        box_shadow="0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+        width="100%",
+        border_top_left_radius="0.8rem",
+        border_top_right_radius="0.8rem",
     )
 
 
@@ -335,7 +538,8 @@ def create_main_content():
             width="30%",
         ),
         rx.box(
-            create_blank_input_form("#dbdbff", _rowsCount="25", _placeholder="chatbot", _value=RedisState.dataArr[3] | ""),
+            create_chat_interface(),
+            render_microphone_button_container(),
             height="720px",
             width="30%",
             background_color="#dbdbff",
