@@ -4,10 +4,78 @@ from ..backend import *
 import datetime
 
 microphone_flag = True
+import asyncio
 
-class HomeState(rx.State):
+class CalendarState(rx.State):
+    year: int = datetime.datetime.now().year
+    month: int = datetime.datetime.now().month
+    day: int = datetime.datetime.now().day
+
+    month_class: dict[int, str] = {
+        1: "January",
+        2: "February",
+        3: "March",
+        4: "April",
+        5: "May",
+        6: "June",
+        7: "July",
+        8: "August",
+        9: "September",
+        10: "October",
+        11: "November",
+        12: "December",
+    }
+    date_class: dict[int, str] = {
+        0: "Mo",
+        1: "Tu",
+        2: "We",
+        3: "Th",
+        4: "Fr",
+        5: "Sa",
+        6: "Su",
+    }
+
+    def is_leap_year(year):
+        return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+
+    def get_days_in_month(self, year, month):
+        if month in (1, 3, 5, 7, 8, 10, 12):
+            return 31
+        elif month in (4, 6, 9, 11):
+            return 30
+        elif month == 2:
+            return 29 if self.is_leap_year(year) else 28
+        return 0
+
+    async def delta_calendar(self, delta: int):
+        # Calculate the total number of days to shift
+        total_days = self.day + delta
+
+        while (
+            total_days > self.get_days_in_month(self.year, self.month) or total_days < 1
+        ):
+            if total_days > self.get_days_in_month(self.year, self.month):
+                # Moving forward
+                total_days -= self.get_days_in_month(self.year, self.month)
+                self.month += 1
+                if self.month > 12:
+                    self.month = 1
+                    self.year += 1
+            elif total_days < 1:
+                # Moving backward
+                self.month -= 1
+                if self.month < 1:
+                    self.month = 12
+                    self.year -= 1
+                total_days += self.get_days_in_month(self.year, self.month)
+
+        self.day = total_days
+        # await asyncio.sleep(0.2)
+        
+        ...
 
     ...
+
 
 class Todo(rx.Model, table=True):
     uuid: str
@@ -23,7 +91,7 @@ def create_icon(icon_tag):
     )
 
 
-def create_icon_button(icon_tag):
+def create_icon_button(icon_tag, deltaArg):
     """Create a button with an icon and styling."""
     return rx.el.button(
         create_icon(icon_tag=icon_tag),
@@ -35,6 +103,12 @@ def create_icon_button(icon_tag):
         padding_bottom="0.5rem",
         border_radius="0.5rem",
         color="#374151",
+        on_click=[
+            CalendarState.delta_calendar(deltaArg),
+            RedisState.read_all(
+                f"{CalendarState.year}-{CalendarState.month}-{CalendarState.day}"
+            ),
+        ],
     )
 
 
@@ -135,8 +209,8 @@ def create_date_navigation():
             border_radius="0.5rem",
             color="#ffffff",
         ),
-        create_icon_button(icon_tag="chevron-left"),
-        create_icon_button(icon_tag="chevron-right"),
+        create_icon_button(icon_tag="chevron-left", deltaArg=-1),
+        create_icon_button(icon_tag="chevron-right", deltaArg=1),
         display="flex",
         column_gap="0.5rem",
     )
@@ -146,7 +220,7 @@ def create_calendar_header():
     """Create a calendar header with title and date navigation."""
     return rx.flex(
         rx.heading(
-            "Calendar",
+            "CalendarState",
             font_weight="700",
             font_size="1.875rem",
             line_height="2.25rem",
@@ -214,7 +288,9 @@ def create_add_task_button():
         border_radius="0.5rem",
         color="#ffffff",
         width="100%",
-        on_click=RedisState.insert_all
+        on_click=RedisState.insert_all(
+            f"{CalendarState.year}-{CalendarState.month}-{CalendarState.day}"
+        ),
         # on_click=RedisState.insert_task
     )
 
@@ -227,11 +303,12 @@ def create_task_input_form():
             placeholder="Add new task",
             border_width="1px",
             border_color="#D1D5DB",
+            background_color="#ffffff",
             padding="0.5rem",
             border_radius="0.25rem",
             width="100%",
             on_change=RedisState.set_task,
-            value=RedisState.task,
+            value="",
         ),
         create_add_task_button(),
         margin_top="1rem",
@@ -308,7 +385,7 @@ def render_microphone_button_container():
         )
     )
 
-def create_blank_input_form(bg_color, _rowsCount, _placeholder, _value):
+def create_blank_input_form(bg_color, _rowsCount, _placeholder, _value, _onChange):
     return rx.flex(
         rx.el.textarea(
             type="text",
@@ -326,6 +403,7 @@ def create_blank_input_form(bg_color, _rowsCount, _placeholder, _value):
             width="100%",
             rows=_rowsCount,
             value=_value,
+            on_change=_onChange,
         ),
         # height="100%,",
         width="100%",
@@ -342,6 +420,10 @@ def create_todo_list_component():
             content="Todo List",
         ),
         rx.list(
+            rx.foreach(
+                RedisState.tasks,
+                create_todo_item,    
+            ),
             create_todo_item(task_text="Prepare presentation"),
             create_todo_item(task_text="Review project timeline"),
             create_todo_item(task_text="Send follow-up emails"),
@@ -495,14 +577,15 @@ def create_main_content():
         rx.box(
             rx.flex(
                 create_heading(
-                    font_size="1rem",
+                    font_size="1.75rem",
                     line_height="2rem",
-                    content="June 1, 2023",
+                    content=f"{CalendarState.day} {CalendarState.month_class[CalendarState.month]} {CalendarState.year}",
                 ),
                 create_date_navigation(),
                 display="flex",
                 align_items="center",
                 justify_content="space-between",
+                padding="0.5rem",
             ),
             create_todo_list_component(),
             background_color="#ffffff",
@@ -516,7 +599,13 @@ def create_main_content():
         rx.box(
             rx.vstack(
                 rx.box(
-                    create_blank_input_form("#dbffea", _rowsCount="13", _placeholder="I will remember today", _value=RedisState.dataArr[0] | ""),
+                    create_blank_input_form(
+                        "#dbffea",
+                        _rowsCount="13",
+                        _placeholder="I will remember today",
+                        _value=RedisState.q1,
+                        _onChange=RedisState.set_q1,
+                    ),
                     height="50%",
                     width="100%",
                     background_color="#dbffea",
@@ -524,7 +613,13 @@ def create_main_content():
                     box_shadow="0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
                 ),
                 rx.box(
-                    create_blank_input_form("#ffdbdb", _rowsCount="13", _placeholder="random question", _value=RedisState.dataArr[1] | ""),
+                    create_blank_input_form(
+                        "#ffdbdb",
+                        _rowsCount="13",
+                        _placeholder="random question",
+                        _value=RedisState.q2,
+                        _onChange=RedisState.set_q2,
+                    ),
                     height="50%",
                     width="100%",
                     background_color="#ffdbdb",
@@ -540,6 +635,13 @@ def create_main_content():
         rx.box(
             create_chat_interface(),
             render_microphone_button_container(),
+            create_blank_input_form(
+                "#dbdbff",
+                _rowsCount="25",
+                _placeholder="chatbot",
+                _value=RedisState.summary,
+                _onChange=RedisState.set_summary,
+            ),
             height="720px",
             width="30%",
             background_color="#dbdbff",
