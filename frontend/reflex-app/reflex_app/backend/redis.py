@@ -3,14 +3,14 @@ import redis
 import datetime as date
 
 # Create a Redis connection pool
-redis_pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
+redis_pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
 
 class RedisState(rx.State):
     key: str = ""
     result: str = ""
 
-    _date: date = date.datetime.now().strftime("%Y-%m-%d")
-    dataArr: list[str] = ["0My day was good", "0I faced issue while developing", "0Happy", "0summary4321"]# q1, q2, mood, summary
+    _date: str = f"{date.datetime.now().year}-{date.datetime.now().month}-{date.datetime.now().day}"
+    dataArr: list[str] = []# q1, q2, mood, summary
     task: str = ""
     q1: str = ""
     q2: str = ""
@@ -25,8 +25,20 @@ class RedisState(rx.State):
         self.key = key
 
     def set_task(self, value: str):
-        print("setval:", value)
         self.task = value
+
+    def set_date(self, value: str):
+        self._date = value
+        print("inside setDate", self._date)
+
+    def set_q1(self, value: str):
+        self.q1 = value
+
+    def set_q2(self, value: str):
+        self.q2 = value
+
+    def set_summary(self, value: str):
+        self.summary = value
 
     def insert_data(self):
         try:
@@ -35,25 +47,40 @@ class RedisState(rx.State):
         except Exception as e:
             self.result = f"Error inserting data: {str(e)}"
 
-    def insert_task(self): #tbd
+    def insert_task(self):  # tbd
         print("insert:", self.task)
         try:
-            self.redis_client.set(self._date, self.task) 
+            self.redis_client.set(self._date, self.task)
         except Exception as e:
             self.result = f"Error inserting data: {str(e)}"
 
-    def insert_all(self):
-        self.q1 = "My day was good"
-        self.q2 = "I faced issue while developing"
-        self.mood = "Happy"
-        self.summary = "summary4321"
+    def insert_all(self, localDate:str):
         self.dataArr = [self.q1, self.q2, self.mood, self.summary]
-        # self.dataArr.append([self.q1, self.q2, self.mood, self.summary])
-        print("insert:", self._date, self.dataArr)
+        print("insert:", localDate, self.dataArr)
         try:
-            self.redis_client.set(self._date, self.dataArr)
+            self.redis_client.rpush(localDate, self.q1, self.q2, self.mood, self.summary)
         except Exception as e:
             self.result = f"Error inserting data: {str(e)}"
+
+    async def read_all(self, date):
+        print("inside read all", date)
+        try:
+            value = self.redis_client.lrange(date, 0, -1)
+            if value:
+                print("value:", type(value))
+                print("value:", type(value[0]))
+                self.q1 = value[0].decode('utf-8')
+                self.q2 = value[1].decode('utf-8')
+                self.mood = value[2].decode('utf-8')
+                self.summary = value[3].decode('utf-8')
+            else:
+                print("not found")
+                self.q1 = ""
+                self.q2 = ""
+                self.mood = ""
+                self.summary = ""
+        except Exception as e:
+            self.result = f"Error reading data: {str(e)}"
 
     def read_data(self):
         try:
