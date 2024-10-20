@@ -11,6 +11,7 @@ class RedisState(rx.State):
 
     _date: str = f"{date.datetime.now().year}-{date.datetime.now().month}-{date.datetime.now().day}"
     dataArr: list[str] = [] # q1, q2, mood, summary
+    task: str = ""
     tasks: list[str] = []
     q1: str = ""
     q2: str = ""
@@ -25,15 +26,17 @@ class RedisState(rx.State):
         self.key = key
 
     def set_task(self, value: list):
-        self.tasks = value
+        self.task = (value)
 
     def set_date(self, value: str):
         self._date = value
 
     def set_q1(self, value: str):
+        print("inside sQ1")
         self.q1 = value
 
     def set_q2(self, value: str):
+        print("inside sQ2")
         self.q2 = value
 
     def set_summary(self, value: str):
@@ -53,7 +56,10 @@ class RedisState(rx.State):
         except Exception as e:
             self.result = f"Error inserting data: {str(e)}"
 
-    def insert_all(self, localDate:str):
+    async def insert_all(self, localDate:str):
+        self.tasks.append(self.task)
+        self.task = ""
+        # print("type value", type(json.dump(self.tasks)), json.dump(self.tasks))
         self.dataArr = [self.q1, self.q2, self.mood, self.summary]
         print("insert:", localDate, self.dataArr)
         try:
@@ -62,12 +68,11 @@ class RedisState(rx.State):
             self.result = f"Error inserting data: {str(e)}"
 
     async def read_all(self, date):
-        print("inside read all", date)
+        # print("inside read all", date)
         self.tasks = []
         try:
             value = self.redis_client.lrange(date, 0, -1)
             if value:
-                # print("value:", )
                 self.q1 = value[0].decode('utf-8')
                 self.q2 = value[1].decode('utf-8')
                 self.mood = value[2].decode('utf-8')
@@ -76,7 +81,7 @@ class RedisState(rx.State):
                 if len(json.loads(value[4].decode('utf-8'))) > 0:
                     self.tasks = json.loads(value[4].decode('utf-8'))
             else:
-                print("not found")
+                print("not found", date)
                 self.q1 = ""
                 self.q2 = ""
                 self.mood = ""
@@ -94,6 +99,10 @@ class RedisState(rx.State):
                 self.result = f"No value found for key: {self.key}"
         except Exception as e:
             self.result = f"Error reading data: {str(e)}"
+    
+    async def delete_data(self, date):
+        print("inside del", date)
+        self.redis_client.delete(date)
 
 def index():
     return rx.vstack(

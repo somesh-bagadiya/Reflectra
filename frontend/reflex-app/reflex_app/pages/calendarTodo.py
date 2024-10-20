@@ -2,11 +2,46 @@ import reflex as rx
 import redis
 from ..backend import *
 import datetime
-
-microphone_flag = True
 import asyncio
 
+microphone_flag = True
+
+
 class CalendarState(rx.State):
+    is_blurred_todo: bool = False
+    is_blurred_box1: bool = False
+    is_blurred_box2: bool = False
+    q1: str = ""
+    q2: str = ""
+
+    @rx.background
+    async def toggle_blur(self):
+        async with self:
+            self.q1 = ""
+            self.q2 = ""
+            self.is_blurred_todo = True
+            self.is_blurred_box1 = True
+            self.is_blurred_box2 = True
+        yield
+        async with self:
+            self.is_blurred_box1 = False
+        yield
+        await asyncio.sleep(3)
+        async with self:
+            self.q1 = (
+                "I will remember my day for the amazing lunch I had with a friend."
+            )
+            self.is_blurred_box2 = False
+        yield
+        await asyncio.sleep(3)
+        async with self:
+            self.q2 = "I faced difficulty in completing my project on time."
+            self.is_blurred_todo = False
+        yield
+        RedisState.insert_all(
+            f"{CalendarState.year}-{CalendarState.month}-{CalendarState.day}"
+        ),  # tbd
+
     year: int = datetime.datetime.now().year
     month: int = datetime.datetime.now().month
     day: int = datetime.datetime.now().day
@@ -48,6 +83,8 @@ class CalendarState(rx.State):
         return 0
 
     async def delta_calendar(self, delta: int):
+        self.q1 = ""
+        self.q2 = ""
         # Calculate the total number of days to shift
         total_days = self.day + delta
 
@@ -71,7 +108,7 @@ class CalendarState(rx.State):
 
         self.day = total_days
         # await asyncio.sleep(0.2)
-        
+
         ...
 
     ...
@@ -80,6 +117,7 @@ class CalendarState(rx.State):
 class Todo(rx.Model, table=True):
     uuid: str
     task: str
+
 
 def create_icon(icon_tag):
     """Create an icon component with specified tag and styling."""
@@ -304,15 +342,19 @@ def create_task_input_form():
             border_width="1px",
             border_color="#D1D5DB",
             background_color="#ffffff",
+            style={
+                "color": "#000000",
+            },
             padding="0.5rem",
             border_radius="0.25rem",
             width="100%",
             on_change=RedisState.set_task,
-            value="",
+            value=RedisState.task,
         ),
         create_add_task_button(),
         margin_top="1rem",
     )
+
 
 def create_loading_spinner():
     """Create an animated loading spinner for the chat interface."""
@@ -333,6 +375,7 @@ def create_loading_spinner():
         padding_top="1rem",
         padding_bottom="1rem",
     )
+
 
 def create_microphone_button():
     """Creates a circular microphone button with gradient background and hover effects."""
@@ -363,12 +406,13 @@ def create_microphone_button():
             box_shadow="0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
             transition_property="background-color, border-color, color, fill, stroke, opacity, box-shadow, transform",
             width="4rem",
+            on_click=CalendarState.toggle_blur,
         )
     else:
         return create_loading_spinner()
 
 
-def render_microphone_button_container():
+def render_microphone_button_container(bg_color):
     """Renders a container with a microphone button positioned at the bottom center of the viewport."""
     return rx.fragment(
         rx.box(
@@ -376,7 +420,7 @@ def render_microphone_button_container():
                 create_microphone_button(),
                 margin_bottom="2rem",
             ),
-            background_color="#dbdbff",
+            background_color=bg_color,
             # class_name="bg-gradient-to-r from-blue-500 to-purple-600 transform",
             display="flex",
             height="8vh",
@@ -385,9 +429,11 @@ def render_microphone_button_container():
         )
     )
 
-def create_blank_input_form(bg_color, _rowsCount, _placeholder, _value, _onChange):
+
+def create_blank_input_form(bg_color, _rowsCount, _placeholder, _value, _onChange, _id):
     return rx.flex(
         rx.el.textarea(
+            id=_id,
             type="text",
             style={
                 "background_color": bg_color,
@@ -422,7 +468,7 @@ def create_todo_list_component():
         rx.list(
             rx.foreach(
                 RedisState.tasks,
-                create_todo_item,    
+                create_todo_item,
             ),
             create_todo_item(task_text="Prepare presentation"),
             create_todo_item(task_text="Review project timeline"),
@@ -439,12 +485,14 @@ def create_todo_list_component():
         border_radius="0.5rem",
         box_shadow="0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
         width="100%",
+        filter=rx.cond(CalendarState.is_blurred_todo, "blur(5px)", "none"),
     )
 
 
 def create_text(content):
     """Create a text element with the given content."""
     return rx.text(content)
+
 
 def create_message_box(message):
     """Create a message box with the given message and timestamp."""
@@ -460,12 +508,11 @@ def create_message_box(message):
         color="#ffffff",
     )
 
+
 def create_aligned_message(message):
     """Create an aligned message with the given message and timestamp."""
     return rx.flex(
-        create_message_box(
-            message=message
-        ),
+        create_message_box(message=message),
         display="flex",
         justify_content="flex-end",
     )
@@ -503,9 +550,7 @@ def create_chat_header():
 def create_user_message():
     """Create a user message with predefined content and timestamp."""
     return rx.box(
-        create_text(
-            content="Hi! I have a question about my account."
-        ),
+        create_text(content="Hi! I have a question about my account."),
         class_name="max-w-[70%]",
         background_color="#E5E7EB",
         padding_left="1rem",
@@ -588,43 +633,66 @@ def create_main_content():
                 padding="0.5rem",
             ),
             create_todo_list_component(),
+            rx.spacer(height="12rem"),
+            render_microphone_button_container(bg_color="ffffff"),
             background_color="#ffffff",
-            flex_grow="1",
+            flex_grow="0",
             padding="1rem",
             border_radius="0.5rem",
             box_shadow="0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
             height="45rem",
             width="40%",
+            # position='absolute'
         ),
         rx.box(
             rx.vstack(
                 rx.box(
+                    create_heading(
+                        font_size="1.25rem",
+                        line_height="1.75rem",
+                        content="How was your day?",
+                    ),
                     create_blank_input_form(
                         "#dbffea",
-                        _rowsCount="13",
-                        _placeholder="I will remember today",
-                        _value=RedisState.q1,
+                        _rowsCount="11",
+                        _placeholder="Speak or Type..",
+                        _value=RedisState.q1 | CalendarState.q1,
                         _onChange=RedisState.set_q1,
+                        _id="Q1",
                     ),
                     height="50%",
                     width="100%",
+                    align_items="center",
+                    justify_content="space-between",
+                    padding="0.5rem",
                     background_color="#dbffea",
                     border_radius="0.5rem",
                     box_shadow="0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+                    filter=rx.cond(CalendarState.is_blurred_box1, "blur(5px)", "none"),
                 ),
                 rx.box(
+                    create_heading(
+                        font_size="1.25rem",
+                        line_height="1.75rem",
+                        content="What challenges did you faced today?",
+                    ),
                     create_blank_input_form(
                         "#ffdbdb",
-                        _rowsCount="13",
-                        _placeholder="random question",
-                        _value=RedisState.q2,
+                        _rowsCount="11",
+                        _placeholder="Speak or Type..",
+                        _value=RedisState.q2 | CalendarState.q2,
                         _onChange=RedisState.set_q2,
+                        _id="Q2",
                     ),
                     height="50%",
                     width="100%",
+                    align_items="center",
+                    justify_content="space-between",
+                    padding="0.5rem",
                     background_color="#ffdbdb",
                     border_radius="0.5rem",
                     box_shadow="0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+                    filter=rx.cond(CalendarState.is_blurred_box2, "blur(5px)", "none"),
                 ),
                 # flex_grow="1",
                 border_radius="0.5rem",
@@ -634,14 +702,7 @@ def create_main_content():
         ),
         rx.box(
             create_chat_interface(),
-            render_microphone_button_container(),
-            create_blank_input_form(
-                "#dbdbff",
-                _rowsCount="25",
-                _placeholder="chatbot",
-                _value=RedisState.summary,
-                _onChange=RedisState.set_summary,
-            ),
+            render_microphone_button_container(bg_color="#dbdbff"),
             height="720px",
             width="30%",
             background_color="#dbdbff",
