@@ -30,7 +30,7 @@ def split_text(text, chunk_size=100):
     return chunks
 
 # Process all text files in a folder, split into chunks, and store in ChromaDB
-def process_documents(data_folder):
+def process_documents(data_folder="./data/"):
     for filename in os.listdir(data_folder):
         if filename.endswith(".txt"):
             file_path = os.path.join(data_folder, filename)
@@ -71,7 +71,8 @@ def generate_llm_response(query, context_chunks):
             {"role": "user", "content": prompt}
         ]
     )
-    
+    print(response['choices'][0]['message']['content'])
+    print()
     return response['choices'][0]['message']['content']
 
 # RAG pipeline: Retrieve relevant chunks from ChromaDB and generate response
@@ -98,7 +99,7 @@ def play_audio(file_path):
 # Example usage
 if __name__ == "__main__":
 
-    process_documents("./data")
+    process_documents("data")
 
     # Example query text for RAG pipeline
     query_text = "Why did I use rollercoaster in my project?"
