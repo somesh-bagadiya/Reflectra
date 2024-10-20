@@ -8,7 +8,6 @@ from datetime import datetime
 from typing import List
 
 
-
 class SummaryMessage(Model):
     summary : str
     mood : str

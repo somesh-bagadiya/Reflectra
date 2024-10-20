@@ -28,7 +28,7 @@ fund_agent_if_low(recording_agent.wallet.address())
 @recording_agent.on_message(model=RecordAudioMessage)
 async def handle_record_audio(ctx: Context, sender: str, msg: RecordAudioMessage):
     print(f"\nRecording for Question {msg.idx}: {msg.question}")
-    input("Press Enter when you're ready to record...")
+    # input("Press Enter when you're ready to record...")
 
     # Record the audio
     filename = f"response_{msg.idx}.wav"
