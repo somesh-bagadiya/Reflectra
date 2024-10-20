@@ -3,10 +3,11 @@ import redis
 from ..backend import *
 import datetime
 import asyncio
-
+import playsound
 microphone_flag = True
 query = ""
 response_text = ""
+
 
 class CalendarState(rx.State):
     is_blurred_todo: bool = False
@@ -22,7 +23,9 @@ class CalendarState(rx.State):
         STT_script.record_audio()
         microphone_flag = True
         query = STT_script.get_transcription()
-        process_documents("C:/Users/somes/OneDrive/Documents/GitHub/calhacks11.0/frontend/reflex-app/reflex_app/backend/data")
+        process_documents(
+            "C:/Users/somes/OneDrive/Documents/GitHub/calhacks11.0/frontend/reflex-app/reflex_app/backend/data"
+        )
         response_text = rag_pipeline(query)
         output_file = "C:/Users/somes/OneDrive/Documents/GitHub/calhacks11.0/frontend/reflex-app/reflex_app/backend/output.wav"
         text_to_speech(response_text, output_file)
@@ -41,16 +44,16 @@ class CalendarState(rx.State):
         async with self:
             self.is_blurred_box1 = False
         yield
-        await asyncio.sleep(3)
+        playsound("assets/q1.mp3")
+        await asyncio.sleep(20)
         async with self:
-            self.q1 = (
-                "I will remember my day for the amazing lunch I had with a friend."
-            )
+            self.q1 = "Today was incredibly productive and enjoyable. I kicked off the morning with an intense coding session, losing track of time as I worked through challenging problems. The satisfaction of completing my tasks left me with a sense of accomplishment and joy."
             self.is_blurred_box2 = False
         yield
-        await asyncio.sleep(3)
+        playsound("assets/q2.mp3")
+        await asyncio.sleep(20)
         async with self:
-            self.q2 = "I faced difficulty in completing my project on time."
+            self.q2 = "I encountered difficulties in managing my workload efficiently today. Balancing multiple urgent tasks simultaneously proved to be more challenging than anticipated, and I found myself constantly switching between tasks, which significantly impacted to complete projects in a timely manner."
             self.is_blurred_todo = False
         yield
         RedisState.insert_all(
@@ -253,8 +256,7 @@ def create_date_navigation():
     return rx.flex(
         rx.el.button(
             "Today",
-            background_color="#3B82F6",
-            _hover={"background-color": "#2563EB"},
+            class_name="bg-gradient-to-r from-blue-500 to-purple-600 transform",
             padding_left="1rem",
             padding_right="1rem",
             padding_top="0.5rem",
@@ -331,8 +333,7 @@ def create_add_task_button():
     """Create an 'Add Task' button with styling."""
     return rx.el.button(
         "Add Task",
-        background_color="#3B82F6",
-        _hover={"background-color": "#2563EB"},
+        class_name="bg-gradient-to-r from-blue-500 to-purple-600 transform",
         margin_top="0.5rem",
         padding_left="1rem",
         padding_right="1rem",
@@ -410,7 +411,7 @@ def create_microphone_button(onClick):
             _focus={
                 "outline-style": "none",
                 "box-shadow": "var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color)",
-                "--ring-color": "#60A5FA",
+                "--ring-color": "#DBDBFF",
                 "--ring-opacity": "0.5",
             },
             height="4rem",
@@ -466,9 +467,8 @@ def create_blank_input_form(bg_color, _rowsCount, _placeholder, _value, _onChang
             value=_value,
             on_change=_onChange,
         ),
-        # height="100%,",
+        height="82%",
         width="100%",
-        margin_top="1rem",
     )
 
 
@@ -649,8 +649,8 @@ def create_main_content():
             ),
             create_todo_list_component(),
             rx.spacer(height="12rem"),
-            render_microphone_button_container(bg_color="ffffff", onClick=CalendarState.toggle_blur),
-            background_color="#ffffff",
+            render_microphone_button_container(bg_color="dbdbff"),
+            background_color="#dbdbff",
             flex_grow="0",
             padding="1rem",
             border_radius="0.5rem",
@@ -662,14 +662,23 @@ def create_main_content():
         rx.box(
             rx.vstack(
                 rx.box(
-                    create_heading(
-                        font_size="1.25rem",
-                        line_height="1.75rem",
-                        content="How was your day?",
+                    rx.box(
+                        rx.heading(
+                            "How was your day?",
+                            font_weight="600",
+                            font_size="1.25rem",
+                            line_height="2rem",
+                            color="#ffffff",
+                            as_="h1",
+                        ),
+                        class_name="bg-gradient-to-r from-blue-400 to-indigo-500",
+                        padding="1rem",
+                        border_top_left_radius="0.8rem",
+                        border_top_right_radius="0.8rem",
                     ),
                     create_blank_input_form(
-                        "#dbffea",
-                        _rowsCount="11",
+                        "#DBDBFF",
+                        _rowsCount="13",
                         _placeholder="Speak or Type..",
                         _value=RedisState.q1 | CalendarState.q1,
                         _onChange=RedisState.set_q1,
@@ -679,20 +688,29 @@ def create_main_content():
                     width="100%",
                     align_items="center",
                     justify_content="space-between",
-                    padding="0.5rem",
-                    background_color="#dbffea",
+                    # padding="0.5rem",
+                    background_color="#DBDBFF",
                     border_radius="0.5rem",
                     box_shadow="0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
                     filter=rx.cond(CalendarState.is_blurred_box1, "blur(5px)", "none"),
                 ),
                 rx.box(
-                    create_heading(
-                        font_size="1.25rem",
-                        line_height="1.75rem",
-                        content="What challenges did you faced today?",
+                    rx.box(
+                        rx.heading(
+                            "What challenges did you face today?",
+                            font_weight="600",
+                            font_size="1.25rem",
+                            line_height="2rem",
+                            color="#ffffff",
+                            as_="h1",
+                        ),
+                        class_name="bg-gradient-to-r from-blue-400 to-indigo-500",
+                        padding="1rem",
+                        border_top_left_radius="0.8rem",
+                        border_top_right_radius="0.8rem",
                     ),
                     create_blank_input_form(
-                        "#ffdbdb",
+                        "#DBDBFF",
                         _rowsCount="11",
                         _placeholder="Speak or Type..",
                         _value=RedisState.q2 | CalendarState.q2,
@@ -703,13 +721,13 @@ def create_main_content():
                     width="100%",
                     align_items="center",
                     justify_content="space-between",
-                    padding="0.5rem",
-                    background_color="#ffdbdb",
+                    # padding="0.5rem",
+                    background_color="#DBDBFF",
                     border_radius="0.5rem",
                     box_shadow="0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
                     filter=rx.cond(CalendarState.is_blurred_box2, "blur(5px)", "none"),
                 ),
-                # flex_grow="1",
+                flex_grow="1",
                 border_radius="0.5rem",
                 height="45rem",
             ),
@@ -717,7 +735,9 @@ def create_main_content():
         ),
         rx.box(
             create_chat_interface(),
-            render_microphone_button_container(bg_color="#dbdbff", onClick=CalendarState.record_audio_mic),
+            render_microphone_button_container(
+                bg_color="#dbdbff", onClick=CalendarState.record_audio_mic
+            ),
             height="720px",
             width="30%",
             background_color="#dbdbff",
