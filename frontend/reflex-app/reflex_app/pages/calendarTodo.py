@@ -306,7 +306,7 @@ def create_task_input_form():
             border_radius="0.25rem",
             width="100%",
             on_change=RedisState.set_task,
-            value=RedisState.task,
+            value="",
         ),
         create_add_task_button(),
         margin_top="1rem",
@@ -347,6 +347,10 @@ def create_todo_list_component():
             content="Todo List",
         ),
         rx.list(
+            rx.foreach(
+                RedisState.tasks,
+                create_todo_item,    
+            ),
             create_todo_item(task_text="Prepare presentation"),
             create_todo_item(task_text="Review project timeline"),
             create_todo_item(task_text="Send follow-up emails"),

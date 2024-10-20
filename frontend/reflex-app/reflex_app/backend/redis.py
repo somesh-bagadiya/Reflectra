@@ -1,7 +1,7 @@
 import reflex as rx
 import redis
 import datetime as date
-
+import json 
 # Create a Redis connection pool
 redis_pool = redis.ConnectionPool(host="localhost", port=6379, db=0)
 
@@ -10,8 +10,8 @@ class RedisState(rx.State):
     result: str = ""
 
     _date: str = f"{date.datetime.now().year}-{date.datetime.now().month}-{date.datetime.now().day}"
-    dataArr: list[str] = []# q1, q2, mood, summary
-    task: str = ""
+    dataArr: list[str] = [] # q1, q2, mood, summary
+    tasks: list[str] = []
     q1: str = ""
     q2: str = ""
     mood: str = ""
@@ -24,12 +24,11 @@ class RedisState(rx.State):
     def set_key(self, key: str):
         self.key = key
 
-    def set_task(self, value: str):
-        self.task = value
+    def set_task(self, value: list):
+        self.tasks = value
 
     def set_date(self, value: str):
         self._date = value
-        print("inside setDate", self._date)
 
     def set_q1(self, value: str):
         self.q1 = value
@@ -64,21 +63,25 @@ class RedisState(rx.State):
 
     async def read_all(self, date):
         print("inside read all", date)
+        self.tasks = []
         try:
             value = self.redis_client.lrange(date, 0, -1)
             if value:
-                print("value:", type(value))
-                print("value:", type(value[0]))
+                # print("value:", )
                 self.q1 = value[0].decode('utf-8')
                 self.q2 = value[1].decode('utf-8')
                 self.mood = value[2].decode('utf-8')
                 self.summary = value[3].decode('utf-8')
+                # print("type, val:", type(len(json.loads(value[4].decode('utf-8')))), len(json.loads(value[4].decode('utf-8'))))
+                if len(json.loads(value[4].decode('utf-8'))) > 0:
+                    self.tasks = json.loads(value[4].decode('utf-8'))
             else:
                 print("not found")
                 self.q1 = ""
                 self.q2 = ""
                 self.mood = ""
                 self.summary = ""
+                self.tasks = []
         except Exception as e:
             self.result = f"Error reading data: {str(e)}"
 
