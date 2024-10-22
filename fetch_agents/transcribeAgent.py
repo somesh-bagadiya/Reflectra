@@ -3,10 +3,13 @@ from uagents import Agent, Model, Context, Bureau
 from deepgram import DeepgramClient, PrerecordedOptions, FileSource
 import logging
 import recordAudio
+from datetime import datetime
 
 
 # Replace with your actual Deepgram API key
 DEEPGRAM_API_KEY = '296282fb0989dceb2ec67d405942f57916d5b7af'
+
+filename = datetime.now().strftime("%Y%m%d_%H%M%S.txt")
 
 # Ensure the API key is provided
 if not DEEPGRAM_API_KEY:
@@ -20,24 +23,27 @@ class TranscriptionMessage(Model):
     transcription: str
 
 # Create the Bureau to manage the agents
-bureau = Bureau()
+bureau = Bureau(port=8003, endpoint="http://localhost:8003/submit")
 
 # Create the sender agent
 sender_agent = Agent(
     name="sender_agent",
     seed="sender_agent_seed",
+    port=8001
 )
 
 # Create the transcription agent
 transcription_agent = Agent(
     name="transcription_agent",
     seed="transcription_agent_seed",
+    port=8003,
 )
 
 # Create the display agent
 display_agent = Agent(
     name="display_agent",
     seed="display_agent_seed",
+    port=8004
 )
 
 # Add agents to the Bureau
@@ -48,6 +54,10 @@ bureau.add(display_agent)
 # Add a flag to control message sending
 message_sent = False
 
+def create_text_file(filename, content):
+    with open(filename, 'a') as file:
+        file.write(content)
+
 # Sender agent sends the message after startup using on_interval decorator
 @sender_agent.on_interval(period=1.0)
 async def send_audio_file_message(ctx: Context):
@@ -57,23 +67,24 @@ async def send_audio_file_message(ctx: Context):
 
     # Path to the audio file to transcribe
     #recordAudio.record_audio(duration=10, filename=check.wav)
-    AUDIO_FILE = "check.wav"
+    for i in range(1,3):
+        AUDIO_FILE = f"response_{i}.wav"
 
-    # Check if the audio file exists
-    if not os.path.exists(AUDIO_FILE):
-        print(f"Audio file {AUDIO_FILE} not found.")
-        #await bureau.stop()
-        return
+        # Check if the audio file exists
+        if not os.path.exists(AUDIO_FILE):
+            print(f"Audio file {AUDIO_FILE} not found.")
+            #await bureau.stop()
+            return
 
-    # Create an AudioFileMessage
-    audio_message = AudioFileMessage(filepath=AUDIO_FILE)
+        # Create an AudioFileMessage
+        audio_message = AudioFileMessage(filepath=AUDIO_FILE)
 
-    # Sender agent sends the audio file message to the transcription agent
-    await ctx.send(transcription_agent.address, audio_message)
-    print(f"[Sender Agent] Sent audio file path to {transcription_agent.address}")
+        # Sender agent sends the audio file message to the transcription agent
+        await ctx.send(transcription_agent.address, audio_message)
+        print(f"[Sender Agent] Sent audio file path to {transcription_agent.address}")
 
-    # Set the flag to True to prevent future executions
-    message_sent = True
+        # Set the flag to True to prevent future executions
+        message_sent = True
 
 # Handler for incoming audio file messages in the transcription agent
 @transcription_agent.on_message(model=AudioFileMessage)
@@ -92,8 +103,13 @@ async def handle_audio_file_message(ctx: Context, sender: str, msg: AudioFileMes
 @display_agent.on_message(model=TranscriptionMessage)
 async def handle_transcription_message(ctx: Context, sender: str, msg: TranscriptionMessage):
     print(f"[Display Agent] Received transcription from {sender}")
-    print("Transcription:")
+    print("Transcription (Yaha se print ho raha hai):")
     print(msg.transcription)
+
+
+    create_text_file(filename, msg.transcription + "\n")
+    print(f"File '{filename}' has been created with the provided content.")
+
     # Stop the Bureau after displaying the transcription
     #await bureau.stop()
 

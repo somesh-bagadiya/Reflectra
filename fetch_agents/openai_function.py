@@ -8,7 +8,6 @@ import openai
 from recordAudio import record_audio  # Import the recording function
 
 from openai import OpenAI
-
 openai.api_key = os.getenv("OPENAI_API_KEY")  # Fetch OpenAI API key from environment variable
 client = OpenAI()
 

@@ -3,7 +3,7 @@ from uagents import Agent, Model, Context
 from uagents.setup import fund_agent_if_low
 import datetime
 from datetime import date
-import openai_function
+# import openai_function
 from datetime import datetime
 from typing import List
 

@@ -40,6 +40,7 @@ async def start_journaling(ctx: Context):
     for idx, question in enumerate(JOURNALING_QUESTIONS, start=1):
         print(f"Sending question {idx}: {question}")
         # Send a RecordAudioMessage to the recording agent
+        # todo connect front end 
         await ctx.send("agent1qgr68mdea9paflx0te4ljyztjfxaj5fxgj6rgs55pk4nhfpc8ru7y3t8lav", RecordAudioMessage(question=question, idx=idx, duration=5))
 
 # Print the sender agent's address
