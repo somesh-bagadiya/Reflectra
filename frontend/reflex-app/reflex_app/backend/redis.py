@@ -32,11 +32,9 @@ class RedisState(rx.State):
         self._date = value
 
     def set_q1(self, value: str):
-        print("inside sQ1")
         self.q1 = value
 
     def set_q2(self, value: str):
-        print("inside sQ2")
         self.q2 = value
 
     def set_summary(self, value: str):

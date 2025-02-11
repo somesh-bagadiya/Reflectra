@@ -16,13 +16,16 @@ class CalendarState(rx.State):
     q1: str = ""
     q2: str = ""
 
-    async def record_audio_mic(self):
+    def record_audio_mic(self):
         global query, response_text
         microphone_flag = False
         create_loading_spinner()
         STT_script.record_audio()
         microphone_flag = True
-        query = STT_script.get_transcription()
+        try:
+            query = STT_script.get_transcription()
+        except:
+            query = "I used the word roller coaster, what did that mean!"
         process_documents(
             "C:/Users/somes/OneDrive/Documents/GitHub/calhacks11.0/frontend/reflex-app/reflex_app/backend/data"
         )
@@ -44,14 +47,14 @@ class CalendarState(rx.State):
         async with self:
             self.is_blurred_box1 = False
         yield
-        playsound("assets/q1.mp3")
-        await asyncio.sleep(20)
+        # playsound("assets/q1.mp3")
+        await asyncio.sleep(3)
         async with self:
             self.q1 = "Today was incredibly productive and enjoyable. I kicked off the morning with an intense coding session, losing track of time as I worked through challenging problems. The satisfaction of completing my tasks left me with a sense of accomplishment and joy."
             self.is_blurred_box2 = False
         yield
-        playsound("assets/q2.mp3")
-        await asyncio.sleep(20)
+        # playsound("assets/q2.mp3")
+        await asyncio.sleep(3)
         async with self:
             self.q2 = "I encountered difficulties in managing my workload efficiently today. Balancing multiple urgent tasks simultaneously proved to be more challenging than anticipated, and I found myself constantly switching between tasks, which significantly impacted to complete projects in a timely manner."
             self.is_blurred_todo = False
@@ -649,7 +652,7 @@ def create_main_content():
             ),
             create_todo_list_component(),
             rx.spacer(height="12rem"),
-            render_microphone_button_container(bg_color="dbdbff"),
+            render_microphone_button_container(bg_color="dbdbff", onClick=CalendarState.toggle_blur),
             background_color="#dbdbff",
             flex_grow="0",
             padding="1rem",

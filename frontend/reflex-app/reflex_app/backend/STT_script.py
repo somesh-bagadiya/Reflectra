@@ -1,6 +1,6 @@
 import pyaudio
 import wave
-from pydub import AudioSegment
+# from pydub import AudioSegment
 
 def record_audio():
     # Parameters for the audio recording

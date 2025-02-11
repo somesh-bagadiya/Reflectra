@@ -62,7 +62,7 @@ def query_documents(query_text, n_results=3):
 # Generate a response using an LLM
 def generate_llm_response(query, context_chunks):
     context = "\n".join(context_chunks)
-    prompt = f"Based on the following context:\n{context}\nAnswer the following question, keep the answer simple and short:\n{query}"
+    prompt = f"Based on the following context:\n{context}\nAnswer the following question as a therapist, keep the answer simple, short and friendly:\n{query}."
     
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
